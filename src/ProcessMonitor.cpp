@@ -1,12 +1,21 @@
 #include "./include/ProcessMonitor.h"
 
-#ifndef __WIN32
+#ifdef __WIN32
 #include <windows.h>
 #include <tlhelp32.h>
-#else
+#endif
+
+#ifdef __LINUX
 #include <dirent.h>
 #include <sys/types.h>
 #include <unistd.h>
+#endif
+
+#ifdef __APPLE__
+#include <dirent.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/sysctl.h>
 #endif
 
 using namespace std;
@@ -25,8 +34,7 @@ vector<string> ProcessMonitor::GetRunningProcesses()
 {
     vector<string> processes;
 
-    #ifndef __WIN32
-
+    #ifdef __WIN32
     HANDLE hProcessSnap;
     PROCESSENTRY32 pe32;
     hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -54,43 +62,67 @@ vector<string> ProcessMonitor::GetRunningProcesses()
     } while (Process32Next(hProcessSnap, &pe32));
 
     CloseHandle(hProcessSnap);
+    #endif
 
-    #else
-
+    #ifdef __LINUX
     DIR *dir;
-
     struct dirent *ent;
+    char name[1024];
 
     if ((dir = opendir("/proc")) != NULL)
     {
         while ((ent = readdir(dir)) != NULL)
         {
-            string pname = ent->d_name;
+            std::string pname = ent->d_name;
 
-            if (pname.find_first_not_of("0123456789") == string::npos)
+            if (pname.find_first_not_of("0123456789") == std::string::npos)
             {
-                string procPath = "/proc/" + pname + "/cmdline";
-
-                FILE* file = fopen(procPath.c_str(), "r");
-
-                if (file)
+                std::ifstream cmdlineFile("/proc/" + pname + "/cmdline");
+                if (cmdlineFile)
                 {
-                    char buffer[1024];
-
-                    if (fgets(name, sizeof(name), file) != NULL)
+                    if (cmdlineFile.getline(name, sizeof(name)))
                     {
-                        string processName = name;
-                        processName.erase(processName.find_last_not_of(" \n") + 1);
-                        processName.push_back(processName);
+                        std::string processName(name);
+                        processes.push_back(processName);
                     }
-                    fclose(file);
+                    cmdlineFile.close();
                 }
-
             }
         }
         closedir(dir);
     }
+    #endif
 
+    #ifdef __APPLE__
+    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0 };
+    size_t len;
+    struct kinfo_proc *procs;
+    int status;
+
+    status = sysctl(mib, 4, NULL, &len, NULL, 0);
+    if (status == -1)
+    {
+        perror("sysctl");
+        return processes;
+    }
+
+    procs = (struct kinfo_proc *)malloc(len);
+    status = sysctl(mib, 4, procs, &len, NULL, 0);
+    if (status == -1)
+    {
+        perror("sysctl");
+        free(procs);
+        return processes;
+    }
+
+    int count = len / sizeof(struct kinfo_proc);
+    for (int i = 0; i < count; ++i)
+    {
+        std::string processName(procs[i].kp_proc.p_comm);
+        processes.push_back(processName);
+    }
+
+    free(procs);
     #endif
 
     return processes;   
