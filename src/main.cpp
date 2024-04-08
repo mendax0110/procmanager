@@ -29,6 +29,7 @@ void detectCmakeAndCompiler();
 void createGitIgnore(const string& projectPath);
 void createReadMe(const string& projectPath);
 void binaryAnalysis(const string& binaryPath);
+void help();
 
 
 int main(int argc, char* argv[])
@@ -37,6 +38,14 @@ int main(int argc, char* argv[])
     {
         cout << "Usage: " << argv[0] << " <option> [arguments...]" << endl;
         return 1;
+    }
+
+    string helpFlag = "--help";
+
+    if (argv[1] == helpFlag)
+    {
+        help();
+        return 0;
     }
 
     int option = atoi(argv[1]);
@@ -134,7 +143,7 @@ int main(int argc, char* argv[])
             break;
         case 14:
             cout << "Exiting...";
-            exit(0);
+            std::exit(0);
             break;
         default:
             cout << "Invalid option" << endl;
@@ -242,4 +251,23 @@ void binaryAnalysis(const string& binaryPath)
         cout << "Binary analyzed successfully" << endl;
     else
         cout << "Failed to analyze binary" << endl;
+}
+
+void help()
+{
+    cout << "Usage: " << endl;
+    cout << "1 <processName> - Check if process is running" << endl;
+    cout << "2 <processPath> - Start process" << endl;
+    cout << "3 <processName> - End process" << endl;
+    cout << "4 - List running processes" << endl;
+    cout << "5 <taskName> <taskPath> <taskTime> - Schedule task" << endl;
+    cout << "6 <taskName> - Unschedule task" << endl;
+    cout << "7 - List scheduled tasks" << endl;
+    cout << "8 <projectName> <projectPath> - Create Cmake file" << endl;
+    cout << "9 <projectPath> - Create build directory and build project" << endl;
+    cout << "10 - Detect Cmake and compiler" << endl;
+    cout << "11 <projectPath> - Create .gitignore file" << endl;
+    cout << "12 <projectPath> - Create README.md file" << endl;
+    cout << "13 <binaryPath> - Analyze binary" << endl;
+    cout << "14 - Exit" << endl;
 }

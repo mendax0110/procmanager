@@ -1,37 +1,29 @@
 # procmanager
 
 ## Description
-`procmanager` is a simple process manager written in C++. It provides functionalities to check if a process is running, start a process, end a process, and list all running processes.
+`procmanager` is a versatile process management tool written in C++. It provides functionalities to manage processes, schedule tasks, create CMake files, and analyze binaries.
+
+## Features
+- Check if a process is running
+- Start a process
+- End a process
+- List all running processes
+- Schedule tasks
+- Create CMake files for projects
+- Build projects using CMake
+- Detect CMake and compiler
+- Create `.gitignore` files
+- Create `README.md` files
+- Analyze binaries
+
+## Dependencies
+- CMake
 
 ## Usage
-1. Check if a process is running
-2. Start a process
-3. End a process
-4. List all running processes
-5. Exit
-
-## Usage Example
 ```bash
-./procmanager
-```
-
-## Build
-```bash
-mkdir build
-```
+./procmanager <option> [arguments...]
+````
 
 ```bash
-cd build
-```
-
-```bash
-cmake ..
-```
-
-```bash
-cmake --build .
-```
-
-## License
-
-MIT License
+./procmanager --help
+````
