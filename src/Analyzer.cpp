@@ -1,8 +1,11 @@
 #include "./include/Analyzer.h"
 
-#ifdef __WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <TlHelp32.h>
+#include <winnt.h>
+#include <wintrust.h>
+#pragma comment(lib, "wintrust.lib")
 #endif
 
 #ifdef __LINUX
@@ -37,7 +40,7 @@ Analyzer::~Analyzer()
 
 bool Analyzer::AnalyzeCreatedBinary(const string& binaryPath)
 {
-    #ifdef __WIN32
+    #ifdef _WIN32
     // analyze binary on Windows
     if (binaryPath.empty())
     {
@@ -47,7 +50,13 @@ bool Analyzer::AnalyzeCreatedBinary(const string& binaryPath)
 
     // check name and size of the binary
     WIN32_FIND_DATA findData;
-    HANDLE hFind = FindFirstFile(binaryPath.c_str(), &findData);
+
+    wchar_t* wtext = new wchar_t[binaryPath.size() + 1];
+    copy(binaryPath.begin(), binaryPath.end(), wtext);
+    wtext[binaryPath.size()] = L'\0';
+
+
+    HANDLE hFind = FindFirstFile(binaryPath.c_str()/*wtext*/, &findData);
 
     if (hFind == INVALID_HANDLE_VALUE)
     {
@@ -55,11 +64,11 @@ bool Analyzer::AnalyzeCreatedBinary(const string& binaryPath)
         return false;
     }
 
-    cout << "Binary name: " << findData.cFileName << endl;
-    cout << "Binary size: " << findData.nFileSizeLow << " bytes" << endl;
+    std::cout << "Binary name: " << findData.cFileName << endl;
+    std::cout << "Binary size: " << findData.nFileSizeLow << " bytes" << endl;
 
     // check if binary is executable
-    if (!(findData.dwFileAttributes & FILE_ATTRIBUTE_EXECUTABLE))
+    if (!(findData.dwFileAttributes & /*FILE_ATTRIBUTE_EXECUTABLE*/ FILE_ATTRIBUTE_VIRTUAL))
     {
         cerr << "Error: Binary is not executable" << endl;
         return false;
@@ -68,13 +77,14 @@ bool Analyzer::AnalyzeCreatedBinary(const string& binaryPath)
     // check if binary is signed
     WINTRUST_FILE_INFO fileData;
     memset(&fileData, 0, sizeof(fileData));
+    const GUID GUID_VERIFICATION_ACTION = { 0x12345678, 0x1234, 0x1234, { 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12 } };
 
     fileData.cbStruct = sizeof(fileData);
-    fileData.pcwszFilePath = binaryPath.c_str();
+    fileData.pcwszFilePath = reinterpret_cast<LPCWSTR>(binaryPath.c_str());
     fileData.hFile = NULL;
     fileData.pgKnownSubject = NULL;
 
-    GUID guidAction = WINTRUST_ACTION_GENERIC_VERIFY_V2;
+    GUID guidAction = GUID_VERIFICATION_ACTION;
     WINTRUST_DATA trustData;
     memset(&trustData, 0, sizeof(trustData));
 
@@ -91,14 +101,13 @@ bool Analyzer::AnalyzeCreatedBinary(const string& binaryPath)
     
     trustData.pFile = &fileData;
 
-    LONG result = WinVerifyTrust(NULL, &guidAction, &trustData);
-
+    LONG result = WinVerifyTrust(NULL, &guidAction, NULL);
     if (result != ERROR_SUCCESS)
     {
         cerr << "Error: Binary is not signed" << endl;
         return false;
     }
-    cout << "Binary is signed" << endl;
+    std::cout << "Binary is signed" << endl;
     return true;
     #endif
 

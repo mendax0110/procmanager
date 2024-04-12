@@ -186,7 +186,7 @@ void listRunningProcesses()
 
 void scheduleTask(const string& taskName, const string& taskPath, const string& taskTime)
 {
-    if (TaskScheduler::ScheduleTask(taskName, taskPath, taskTime))
+    if (TaskSchedule::ScheduleTask(taskName, taskPath, taskTime))
         cout << "Task scheduled successfully" << endl;
     else
         cout << "Failed to schedule task" << endl;
@@ -194,7 +194,7 @@ void scheduleTask(const string& taskName, const string& taskPath, const string& 
 
 void unscheduleTask(const string& taskName)
 {
-    if (TaskScheduler::UnscheduleTask(taskName))
+    if (TaskSchedule::UnscheduleTask(taskName))
         cout << "Task unscheduled successfully" << endl;
     else
         cout << "Failed to unschedule task" << endl;
@@ -202,7 +202,7 @@ void unscheduleTask(const string& taskName)
 
 void listScheduledTasks()
 {
-    vector<string> tasks = TaskScheduler::GetScheduledTasks();
+    vector<string> tasks = TaskSchedule::GetScheduledTasks();
     for (const string& task : tasks)
         cout << task << endl;
 }

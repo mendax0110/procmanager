@@ -7,11 +7,11 @@
 
 namespace TaskSchedulerInternals
 {
-    class TaskScheduler
+    class TaskSchedule
     {
     public:
-        TaskScheduler();
-        ~TaskScheduler();
+        TaskSchedule();
+        ~TaskSchedule();
         static bool ScheduleTask(const std::string& taskPath, const std::string& taskName, const std::string& taskTime);
         static bool UnscheduleTask(const std::string& taskName);
         static std::vector<std::string> GetScheduledTasks();

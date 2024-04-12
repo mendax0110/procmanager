@@ -1,6 +1,6 @@
 #include "./include/ProcessMonitor.h"
 
-#ifdef __WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <tlhelp32.h>
 #endif
@@ -34,7 +34,7 @@ vector<string> ProcessMonitor::GetRunningProcesses()
 {
     vector<string> processes;
 
-    #ifdef __WIN32
+    #ifdef _WIN32
     HANDLE hProcessSnap;
     PROCESSENTRY32 pe32;
     hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);

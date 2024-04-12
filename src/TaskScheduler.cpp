@@ -1,8 +1,12 @@
 #include "./include/TaskScheduler.h"
 
-#ifdef __WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <taskschd.h>
+#include <variant>
+#include <comutil.h>
+#include <comdef.h>
+#pragma comment(lib, "taskschd.lib")
 #endif
 
 #ifdef __LINUX
@@ -18,21 +22,23 @@
 #include <signal.h>
 #endif
 
+#include <iostream>
+
 
 using namespace std;
 using namespace TaskSchedulerInternals;
 
-TaskScheduler::TaskScheduler()
+TaskSchedule::TaskSchedule()
 {
 }
 
-TaskScheduler::~TaskScheduler()
+TaskSchedule::~TaskSchedule()
 {
 }
 
-bool TaskScheduler::ScheduleTask(const string& taskPath, const string& taskName, const string& taskTime)
+bool TaskSchedule::ScheduleTask(const string& taskPath, const string& taskName, const string& taskTime)
 {
-    #ifdef __WIN32
+    #ifdef _WIN32
     ITaskService* pService = NULL;
     ITaskFolder* pRootFolder = NULL;
     IRegisteredTask* pTask = NULL;
@@ -75,11 +81,15 @@ bool TaskScheduler::ScheduleTask(const string& taskPath, const string& taskName,
     hr = pRootFolder->RegisterTaskDefinition(
         _bstr_t(taskName.c_str()),
         NULL,
-        _bstr_t(taskPath.c_str()),
+        LONG(taskPath.c_str()),
+        variant_t(L""),
+        variant_t(L""),
+        TASK_LOGON_TYPE::TASK_LOGON_INTERACTIVE_TOKEN,
+        variant_t(L""),
+        /*_bstr_t(L""),
         _bstr_t(L""),
         _bstr_t(L""),
-        _bstr_t(L""),
-        _bstr_t(L""),
+        _bstr_t(L""),*/
         &pTask
     );
 
@@ -145,9 +155,9 @@ bool TaskScheduler::ScheduleTask(const string& taskPath, const string& taskName,
     #endif
 }
 
-bool TaskScheduler::UnscheduleTask(const string& taskName)
+bool TaskSchedule::UnscheduleTask(const string& taskName)
 {
-    #ifdef __WIN32
+    #ifdef _WIN32
     ITaskService* pService = NULL;
     ITaskFolder* pRootFolder = NULL;
     HRESULT hr = S_OK;
@@ -237,11 +247,11 @@ bool TaskScheduler::UnscheduleTask(const string& taskName)
     #endif
 }
 
-vector<string> TaskScheduler::GetScheduledTasks()
+vector<string> TaskSchedule::GetScheduledTasks()
 {
     vector<string> tasks;
 
-    #ifdef __WIN32
+    #ifdef _WIN32
     ITaskService* pService = NULL;
     ITaskFolder* pRootFolder = NULL;
     IRegisteredTaskCollection* pTaskCollection = NULL;
@@ -330,10 +340,17 @@ vector<string> TaskScheduler::GetScheduledTasks()
             return tasks;
         }
 
-        tasks.push_back(string(taskName));
+        tasks.push_back(reinterpret_cast<const char*>(taskName));
         SysFreeString(taskName);
         pTask->Release();
     }
+
+    pTaskCollection->Release();
+    pRootFolder->Release();
+    pService->Release();
+    CoUninitialize();
+    return tasks;
+
     #endif
 
     #ifdef __LINUX
@@ -361,36 +378,36 @@ vector<string> TaskScheduler::GetScheduledTasks()
     closedir(dir);
     #endif
 
-        #ifdef __APPLE__
-        int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
-        size_t len;
-        struct kinfo_proc* procs;
-        int status;
+    #ifdef __APPLE__
+    int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
+    size_t len;
+    struct kinfo_proc* procs;
+    int status;
 
-        status = sysctl(mib, 4, NULL, &len, NULL, 0);
-        if (status == -1)
-        {
-            perror("sysctl");
-            return tasks;
-        }
+    status = sysctl(mib, 4, NULL, &len, NULL, 0);
+    if (status == -1)
+    {
+        perror("sysctl");
+        return tasks;
+    }
 
-        procs = (struct kinfo_proc*)malloc(len);
-        status = sysctl(mib, 4, procs, &len, NULL, 0);
-        if (status == -1)
-        {
-            perror("sysctl");
-            free(procs);
-            return tasks;
-        }
-
-        int nprocs = len / sizeof(struct kinfo_proc);
-        for (int i = 0; i < nprocs; i++)
-        {
-            tasks.push_back(to_string(procs[i].kp_proc.p_pid));
-        }
-        
-
+    procs = (struct kinfo_proc*)malloc(len);
+    status = sysctl(mib, 4, procs, &len, NULL, 0);
+    if (status == -1)
+    {
+        perror("sysctl");
         free(procs);
         return tasks;
-        #endif
+    }
+
+    int nprocs = len / sizeof(struct kinfo_proc);
+    for (int i = 0; i < nprocs; i++)
+    {
+        tasks.push_back(to_string(procs[i].kp_proc.p_pid));
+    }
+        
+
+    free(procs);
+    return tasks;
+    #endif
 }

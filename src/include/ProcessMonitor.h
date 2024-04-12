@@ -17,6 +17,7 @@ namespace ProcessMonitorInternals
 
     private:
 
+
     protected:
     };
 }

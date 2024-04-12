@@ -1,6 +1,6 @@
 #include "./include/CmakeCreator.h"
 
-#ifdef __WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <direct.h>
 #endif
@@ -9,19 +9,20 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #endif
 
 #ifdef __APPLE__
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #endif
 
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
-#include <dirent.h>
 
 using namespace std;
 using namespace CmakeCreatorInternals;
@@ -53,7 +54,7 @@ bool CmakeCreator::CreateCmakeFile(const string& projectName, const string& proj
     
     // find all the header files
     vector<string> headerFiles;
-    #ifdef __WIN32
+    #ifdef _WIN32
     string searchPath = projectPath + "\\include";
     WIN32_FIND_DATA findData;
     HANDLE hFind = FindFirstFile((searchPath + "\\*").c_str(), &findData);
@@ -124,7 +125,7 @@ bool CmakeCreator::CreateCmakeFile(const string& projectName, const string& proj
     // find all the source files
     vector<string> sourceFiles;
 
-    #ifdef __WIN32
+    #ifdef _WIN32
     searchPath = projectPath + "\\src";
     hFind = FindFirstFile((searchPath + "\\*").c_str(), &findData);
 
@@ -230,7 +231,7 @@ int CmakeCreator::CreateBuildDirAndBuild(const string& projectPath)
 {
     try
     {
-        #ifdef __WIN32
+        #ifdef _WIN32
         string buildDir = projectPath + "\\build";
         _mkdir(buildDir.c_str());
         #endif
@@ -245,7 +246,7 @@ int CmakeCreator::CreateBuildDirAndBuild(const string& projectPath)
         mkdir(buildDir.c_str(), 0777);
         #endif
 
-        #ifdef __WIN32
+        #ifdef _WIN32
         string command = "cd " + buildDir + " && cmake .. && cmake --build .";
         return system(command.c_str());
         #endif
@@ -271,7 +272,7 @@ int CmakeCreator::CreateBuildDirAndBuild(const string& projectPath)
 
 std::string CmakeCreator::DetectCmakeAndCompiler()
 {
-    #ifdef __WIN32
+    #ifdef _WIN32
     string cmakePath = "cmake";
     string compilerPath = "cl";
     #endif

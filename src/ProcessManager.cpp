@@ -1,6 +1,6 @@
 #include "./include/ProcessManager.h"
 
-#ifdef __WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <TlHelp32.h>
 #endif
@@ -33,7 +33,7 @@ ProcessManager::~ProcessManager()
 
 bool ProcessManager::StartProcess(const string& processPath)
 {
-    #ifdef __WIN32
+    #ifdef _WIN32
     wstring wstr(processPath.begin(), processPath.end());
 
     if (ShellExecuteW(NULL, L"open", wstr.c_str(), NULL, NULL, SW_SHOWNORMAL) > (HINSTANCE)32)
@@ -100,7 +100,7 @@ bool ProcessManager::StartProcess(const string& processPath)
 
 bool ProcessManager::EndProcess(const string& processName)
 {
-    #ifdef __WIN32
+    #ifdef _WIN32
     HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     PROCESSENTRY32 pe;
     pe.dwSize = sizeof(PROCESSENTRY32);
