@@ -3,10 +3,15 @@
 #include "./include/TaskScheduler.h"
 #include "./include/CmakeCreator.h"
 #include "./include/Analyzer.h"
+#include "./include/Logger.h"
 
 #include <iostream>
 #include <vector>
 #include <cstdlib>
+#include <chrono>
+#include <sstream>
+#include <iomanip>
+#include <filesystem>
 
 using namespace std;
 using namespace ProcessManagerInternals;
@@ -14,7 +19,8 @@ using namespace ProcessMonitorInternals;
 using namespace TaskSchedulerInternals;
 using namespace CmakeCreatorInternals;
 using namespace AnalyzerInternals;
-
+using namespace LoggerInternals;
+namespace fs = std::filesystem;
 
 void checkProcess(const string& processName);
 void startProcess(const string& processPath);
@@ -29,6 +35,7 @@ void detectCmakeAndCompiler();
 void createGitIgnore(const string& projectPath);
 void createReadMe(const string& projectPath);
 void binaryAnalysis(const string& binaryPath);
+void logExecutables(const string& executablePath);
 void help();
 
 
@@ -142,8 +149,11 @@ int main(int argc, char* argv[])
             binaryAnalysis(argv[2]);
             break;
         case 14:
-            cout << "Exiting...";
-            std::exit(0);
+            if (argc < 3)
+            {
+                cout << "Usage: " << argv[0] << " 14 <exeToLog>" << endl;
+            }
+            logExecutables(argv[2]);
             break;
         default:
             cout << "Invalid option" << endl;
@@ -253,21 +263,74 @@ void binaryAnalysis(const string& binaryPath)
         cout << "Failed to analyze binary" << endl;
 }
 
+void logExecutables(const string& executablePath)
+{
+    auto now = chrono::system_clock::now();
+    time_t currentTime = chrono::system_clock::to_time_t(now);
+
+    ostringstream oss;
+    oss << put_time(localtime(&currentTime), "%Y-%m-%d_%H-%M-%S");
+    string logFileName = "log_" + oss.str() + ".txt";
+
+    Logger logger(logFileName);
+
+    FILE* pipe = _popen((executablePath + " 2>&1").c_str(), "r");
+
+    if (!pipe)
+    {
+        logger.log(LogLevel::ERROR, "Failed to execute command");
+        return;
+    }
+
+    char buffer[128];
+    while (!feof(pipe))
+    {
+        if (fgets(buffer, 128, pipe) != nullptr)
+        {
+            logger.log(LogLevel::INFO, buffer);
+        }
+
+        //vector<string> processes = ProcessMonitor::GetRunningProcesses();
+        //for (const string& process : processes)
+        //{
+        //    string processName = fs::path(executablePath).filename().string();
+
+        //    if (process == processName)
+        //    {
+        //        cout << "Process not running anymore, stopped logging." << endl;
+        //        
+        //        _pclose(pipe);
+        //        exit(0);
+        //    }
+        //}
+    }
+
+    _pclose(pipe);
+
+    logger.log(LogLevel::INFO, "Executable logged successfully");
+}
+
 void help()
 {
-    cout << "Usage: " << endl;
-    cout << "1 <processName> - Check if process is running" << endl;
-    cout << "2 <processPath> - Start process" << endl;
-    cout << "3 <processName> - End process" << endl;
-    cout << "4 - List running processes" << endl;
-    cout << "5 <taskName> <taskPath> <taskTime> - Schedule task" << endl;
-    cout << "6 <taskName> - Unschedule task" << endl;
-    cout << "7 - List scheduled tasks" << endl;
-    cout << "8 <projectName> <projectPath> - Create Cmake file" << endl;
-    cout << "9 <projectPath> - Create build directory and build project" << endl;
-    cout << "10 - Detect Cmake and compiler" << endl;
-    cout << "11 <projectPath> - Create .gitignore file" << endl;
-    cout << "12 <projectPath> - Create README.md file" << endl;
-    cout << "13 <binaryPath> - Analyze binary" << endl;
-    cout << "14 - Exit" << endl;
+    string menu =   "-----------------------------------------------------------\n"
+                    "Usage: \n"
+                    "----------------------Process Manager----------------------\n"
+                    "1. <processName> - Check if process is running\n"
+                    "2. <processPath> - Start process\n"
+                    "3. <processName> - End process\n"
+                    "4. - List running processes\n"
+                    "-----------------------Task Scheduler----------------------\n"
+                    "5. <taskName> <taskPath> <taskTime> - Schedule task\n"
+                    "6. <taskName> - Unschedule task\n"
+                    "7. - List scheduled tasks\n"
+                    "-----------------------Cmake Creator-----------------------\n"
+                    "8. <projectName> <projectPath> - Create Cmake file\n"
+                    "9. <projectPath> - Create build directory and build project\n"
+                    "10. - Detect Cmake and compiler\n"
+                    "11. <projectPath> - Create .gitignore file\n"
+                    "12. <projectPath> - Create README.md file\n"
+                    "13. <binaryPath> - Analyze binary\n"
+                    "14. <exeToLog> - Log executables\n"
+                    "-----------------------------------------------------------\n";
+    cout << menu;
 }

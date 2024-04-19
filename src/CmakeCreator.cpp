@@ -272,23 +272,82 @@ int CmakeCreator::CreateBuildDirAndBuild(const string& projectPath)
 
 std::string CmakeCreator::DetectCmakeAndCompiler()
 {
+    string cmakePath;
+    string compilerPath;
+
     #ifdef _WIN32
-    string cmakePath = "cmake";
-    string compilerPath = "cl";
+    string commandCmake = "where cmake";
+    FILE* pipe = _popen(commandCmake.c_str(), "r");
+    if (pipe != nullptr)
+    {
+        char buffer[128];
+        while (!feof(pipe))
+        {
+            if (fgets(buffer, 128, pipe) != NULL)
+            {
+                cmakePath += buffer;
+            }
+        }
+        _pclose(pipe);
+    }
+
+    string commandCompilers = "where cl.exe && where g++.exe && where clang++.exe";
+    pipe = _popen(commandCompilers.c_str(), "r");
+    if (pipe != nullptr)
+    {
+        char buffer[128];
+        while (!feof(pipe))
+        {
+            if (fgets(buffer, 128, pipe) != NULL)
+            {
+                compilerPath += buffer;
+            }
+        }
+        _pclose(pipe);
+            }
     #endif
 
-    #ifdef __LINUX
-    string cmakePath = "cmake";
-    string compilerPath = "g++";
+    #ifdef __linux__
+    cmakePath = "cmake";
+
+    string commandCompilers = "which g++ && which clang++";
+    FILE* pipe = popen(commandCompilers.c_str(), "r");
+    if (pipe != nullptr)
+    {
+        char buffer[128];
+        while (!feof(pipe))
+        {
+            if (fgets(buffer, 128, pipe) != NULL)
+            {
+                compilerPath += buffer;
+            }
+        }
+        pclose(pipe);
+    }
     #endif
 
     #ifdef __APPLE__
-    string cmakePath = "cmake";
-    string compilerPath = "clang++";
+    cmakePath = "cmake";
+    
+    string commandCompilers = "which g++ && which clang++";
+    FILE* pipe = popen(commandCompilers.c_str(), "r");
+    if (pipe != nullptr)
+    {
+        char buffer[128];
+        while (!feof(pipe))
+        {
+            if (fgets(buffer, 128, pipe) != NULL)
+            {
+                compilerPath += buffer;
+            }
+        }
+        pclose(pipe);
+    }
     #endif
 
     return cmakePath + " " + compilerPath;
 }
+
 
 bool CmakeCreator::CreateGitIgnore(const string& projectPath)
 {
